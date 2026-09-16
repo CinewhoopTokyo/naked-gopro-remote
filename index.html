@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#06090c">
 <title>Naked GoPro Remote | 録れているか、見えない。</title>
-<meta name="description" content="画面のない剥きプロに BLE で繋ぎ、SD・動画モード・録画残量を手元に出す。最大4台。CINEWHOOP TOKYO">
+<meta name="description" content="画面のない剥きプロに BLE で繋ぎ、SD・動画モード・録画残量を手元に出す。最大8台。CINEWHOOP TOKYO">
 <style>
 :root{
   --bg:#06090c; --surface:#0e1319; --surface2:#141b22; --line:#232c35; --line2:#2e3944;
@@ -211,11 +211,12 @@ REMOTE 88%</div>
       <div>
         <div class="oled">CAMERAS            ALL
 ────────────────────────
-*1 GoPro 1234      REC
-*2 GoPro 5678      rdy
-*3 GoPro 9012     pair
-*4 --</div>
-        <div class="caveat">最大4台。1台ずつでも、全台まとめてでも</div>
+*1 1234 REC │*5 --
+*2 5678 rdy │*6 7890 rdy
+*3 9012 par │*7 3456 rdy
+*4 --       │*8 --</div>
+        <div class="caveat">最大8台。2列 × 4行で全台が一画面に載る。名前は末尾4桁（GoPro はここで見分ける）。
+          1台ずつでも、全台まとめてでも</div>
       </div>
     </div>
   </div>
@@ -228,7 +229,7 @@ REMOTE 88%</div>
     <div class="label">MULTI CAMERA</div>
     <h2>複数台を、ひとつで。</h2>
     <p class="say">剥きプロを何台も運用していると、どれが録れているか分からなくなる。
-      <b>最大4台に同時接続し、一覧で状態を見て、選んで、あるいは全台まとめて回す。</b></p>
+      <b>最大8台に同時接続し、一覧で状態を見て、選んで、あるいは全台まとめて回す。</b></p>
     <div class="branch">
       <div class="br ok"><div class="k">左右</div><div class="sub">カメラを選ぶ（ALL → 1 → 2 …）</div></div>
       <div class="br ok"><div class="k">上下</div><div class="sub">画面を切り替える</div></div>
@@ -284,7 +285,7 @@ REMOTE 88%</div>
       <tr><td>電源</td><td><b>LIR2032 のみ</b>（充電式リチウムイオン）。USB-C で充電。<b>CR2032 は不可</b></td></tr>
       <tr><td>基板</td><td>30.1 × 62.1mm / 2層 / 1oz / 黒レジスト・白シルク・ENIG</td></tr>
       <tr><td>対応</td><td>GoPro HERO9 以降（Open GoPro BLE API）</td></tr>
-      <tr><td>同時接続</td><td>最大 4台</td></tr>
+      <tr><td>同時接続</td><td>最大 8台（一覧は 2列 × 4行）</td></tr>
     </table>
   </div>
 </section>
