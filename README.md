@@ -4,7 +4,9 @@
 
 **製品ページ → https://cinewhooptokyo.github.io/naked-gopro-remote/**
 
-![Naked GoPro Remote](images/iso.jpg)
+![Naked GoPro Remote](images/product.jpg)
+
+*暫定の製品画像。有機ELに映っているのは実際の描画コードが出力した実ピクセル。*
 
 ## これは何か
 
