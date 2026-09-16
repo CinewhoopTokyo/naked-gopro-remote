@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#06090c">
+<title>Naked GoPro Remote | 録れているか、見えない。</title>
+<meta name="description" content="画面のない剥きプロに BLE で繋ぎ、SD・動画モード・録画残量を手元に出す。最大4台。CINEWHOOP TOKYO">
+<style>
+
+:root{
+  --bg:#06090c; --surface:#0e1319; --surface2:#141b22; --line:#232c35; --line2:#2e3944;
+  --text:#f4f7f9; --muted:#7d8a96; --dim:#a8b3bd;
+  --green:#37e6a0; --cyan:#7de3ff; --red:#ff665c; --amber:#ffbf47;
+  --sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+  line-height:1.8;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.wrap{max-width:1120px;margin:auto;padding:0 30px}
+img{max-width:100%;height:auto;display:block}
+a{color:var(--green)}
+
+.label{font:700 .68rem var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--green)}
+.rule{height:1px;background:linear-gradient(90deg,var(--line2),transparent)}
+h2{font-size:clamp(1.9rem,5vw,3.4rem);line-height:1.1;letter-spacing:-.045em;
+  margin:.5rem 0 0;font-weight:800;max-width:17ch}
+.say{color:var(--dim);font-size:clamp(1rem,1.5vw,1.12rem);max-width:36rem;margin:26px 0 0}
+.say b{color:var(--text);font-weight:700}
+section{padding:clamp(84px,12vh,140px) 0}
+
+/* 有機ELの画面 */
+.oled{background:linear-gradient(180deg,#050d11,#03080b);border:1px solid #16323c;
+  border-radius:8px;padding:18px 20px;font:700 .86rem/1.75 var(--mono);color:var(--cyan);
+  white-space:pre;overflow-x:auto;position:relative;
+  box-shadow:inset 0 0 40px rgba(125,227,255,.09),0 12px 40px rgba(0,0,0,.5);
+  text-shadow:0 0 12px rgba(125,227,255,.45)}
+.oled:after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:8px;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px)}
+.oled.lg{font-size:1.05rem;padding:26px 28px}
+
+
+.hero .sub{font:800 clamp(1.1rem,2.6vw,1.7rem)/1.3 var(--sans);letter-spacing:-.03em;
+  color:var(--green);margin:0 0 22px}
+
+/* シーン：正常だったとき／短絡していたとき */
+.scene{background:radial-gradient(ellipse at 90% 10%,rgba(55,230,160,.07),transparent 34rem)}
+.beat{margin:46px 0 0;font-size:clamp(1.15rem,2.8vw,1.7rem);line-height:1.9;
+  letter-spacing:-.03em;font-weight:700;color:#dbe3e9}
+.beat span{display:block}
+.beat .q{color:var(--muted);font-weight:400}
+.branch{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:56px}
+.br{border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--surface)}
+.br header{padding:22px 26px;border-bottom:1px solid var(--line);display:flex;
+  align-items:center;gap:11px;font-weight:800;letter-spacing:-.02em;font-size:1.05rem}
+.br header i{width:9px;height:9px;border-radius:50%;font-style:normal;flex:none}
+.br.ok header i{background:var(--green);box-shadow:0 0 14px var(--green)}
+.br.ng header i{background:var(--red);box-shadow:0 0 14px var(--red)}
+.br .body{padding:26px}
+.br .row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.br .row em{font-style:normal;font:700 .64rem var(--mono);letter-spacing:.16em;color:var(--muted);
+  border:1px solid var(--line2);border-radius:999px;padding:4px 9px;flex:none}
+.br .oled{margin-bottom:18px}
+.br .verdict{margin:20px 0 0;font-size:1rem;line-height:1.7;color:var(--dim)}
+.br.ng .verdict b{color:var(--red)}
+.br.ok .verdict b{color:var(--green)}
+.blocked{border:1px dashed rgba(255,102,92,.5);border-radius:10px;padding:14px 16px;
+  font:800 .8rem var(--mono);letter-spacing:.14em;color:var(--red);text-align:center;margin-top:4px}
+@media(max-width:880px){.branch{grid-template-columns:1fr}}
+
+
+.flowline{display:flex;flex-wrap:wrap;gap:10px;margin-top:44px;align-items:center}
+.flowline span{font:700 .84rem var(--mono);letter-spacing:.02em;color:var(--dim);
+  border:1px solid var(--line2);border-radius:999px;padding:9px 17px}
+.flowline span+span:before{content:"→ ";color:var(--green);margin-right:6px}
+
+
+/* 日本語の折り返し。文節で切り、見出しは行長をそろえる。
+   auto-phrase 未対応の環境では既定動作に落ちるだけで害はない */
+h1,h2,h3,.pull,.beat,.hero p,.say,.br .verdict,.cell b,.legend b,.step h3{
+  word-break:auto-phrase;line-break:strict}
+h1,h2,h3,.pull,.cell b,.legend b{text-wrap:balance}
+.say,.br .verdict,.cell p,.legend p,.caveat p{text-wrap:pretty}
+
+/* ヒーロー */
+.hero{position:relative;min-height:100svh;display:grid;align-items:end;overflow:hidden}
+.hero-img{position:absolute;inset:0;background:url(images/product_case.jpg) 50% 42%/cover no-repeat;
+  transform:scale(1.06)}
+.hero-veil{position:absolute;inset:0;background:
+  linear-gradient(to bottom,rgba(6,9,12,.62) 0%,rgba(6,9,12,.18) 34%,rgba(6,9,12,.92) 78%,var(--bg) 100%)}
+.hero-inner{position:relative;padding:0 0 clamp(56px,10vh,104px)}
+h1{font-size:clamp(2.8rem,9.5vw,7.2rem);line-height:.9;letter-spacing:-.055em;font-weight:800;
+  margin:22px 0 26px;max-width:13ch}
+.hero p{font-size:clamp(1.05rem,2vw,1.4rem);color:#cbd4db;max-width:36rem;margin:0;line-height:1.65}
+.hero p b{color:#fff}
+
+/* 問題 */
+.problem{background:radial-gradient(ellipse at 8% 0%,rgba(255,102,92,.10),transparent 34rem)}
+.pull{margin:52px 0 0;font-size:clamp(1.25rem,3.2vw,2rem);line-height:1.5;
+  letter-spacing:-.035em;font-weight:700;max-width:24ch;color:#e7edf1}
+.pull i{font-style:normal;color:var(--red)}
+.who{margin-top:44px;display:flex;flex-wrap:wrap;gap:10px}
+.who span{font:700 .78rem var(--mono);letter-spacing:.06em;color:var(--dim);
+  border:1px solid var(--line2);border-radius:999px;padding:8px 15px}
+
+/* 手順 */
+.steps{margin-top:60px;display:grid;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.step{background:var(--bg);padding:clamp(28px,4vw,42px);display:grid;
+  grid-template-columns:5.5rem 1fr 1.15fr;gap:clamp(18px,3vw,40px);align-items:start}
+.step .no{font:800 clamp(2.2rem,5vw,3.4rem)/1 var(--mono);letter-spacing:-.06em;
+  color:transparent;-webkit-text-stroke:1px var(--line2)}
+.step.on .no{-webkit-text-stroke:1px rgba(55,230,160,.55);color:rgba(55,230,160,.08)}
+.step h3{margin:0 0 10px;font-size:clamp(1.2rem,2.4vw,1.6rem);letter-spacing:-.03em;line-height:1.3}
+.step p{margin:0;color:var(--muted);font-size:.96rem}
+.step .tag{display:inline-block;margin-top:14px;font:700 .66rem var(--mono);letter-spacing:.14em;
+  padding:5px 10px;border-radius:999px;border:1px solid var(--line2);color:var(--muted)}
+.step .tag.g{color:var(--green);border-color:rgba(55,230,160,.4)}
+.step .tag.r{color:var(--red);border-color:rgba(255,102,92,.4)}
+
+/* 計測 */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,5vw,80px);align-items:center}
+.readout{display:grid;gap:10px;margin-top:30px}
+.readout div{display:grid;grid-template-columns:6.5rem 1fr;gap:16px;align-items:baseline;
+  padding-bottom:10px;border-bottom:1px solid var(--line)}
+.readout b{font:700 .8rem var(--mono);color:var(--cyan)}
+.readout span{color:var(--muted);font-size:.92rem}
+
+/* 呼び出し図 */
+.fig{margin:54px 0 0;position:relative;border:1px solid var(--line);border-radius:20px;
+  overflow:hidden;background:var(--surface)}
+.fig .ov{position:absolute;inset:0;width:100%;height:100%}
+.ov .ld{stroke:var(--green);stroke-width:7;fill:none;opacity:.85}
+.ov circle{fill:rgba(6,9,12,.86);stroke:var(--green);stroke-width:6}
+.ov text{fill:var(--green);font:700 62px var(--mono);text-anchor:middle;dominant-baseline:central}
+.legend{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-top:0;border-radius:0 0 20px 20px;overflow:hidden;margin-top:-1px}
+.legend div{background:var(--bg);padding:20px 22px}
+.legend em{font-style:normal;font:700 .72rem var(--mono);color:var(--green);display:block;margin-bottom:7px}
+.legend b{display:block;font-size:1rem;letter-spacing:-.02em;margin-bottom:5px}
+.legend p{margin:0;color:var(--muted);font-size:.86rem;line-height:1.6}
+
+/* 小さな特徴 */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-top:54px}
+.cell{background:var(--bg);padding:clamp(26px,3.4vw,38px);transition:background .3s ease}
+.cell:hover{background:var(--surface)}
+.cell .label{font-size:.62rem;letter-spacing:.2em}
+.cell b{display:block;font-size:1.14rem;letter-spacing:-.025em;margin:14px 0 10px;line-height:1.4}
+.cell p{margin:0;color:var(--muted);font-size:.92rem}
+.blink{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 14px var(--green);margin-right:8px;vertical-align:middle;animation:bl 1.6s infinite}
+@keyframes bl{0%,45%{opacity:1}55%,100%{opacity:.15}}
+
+/* 表 */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:18px;margin-top:50px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:.95rem}
+th,td{padding:17px 20px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{background:var(--surface2);font:700 .64rem var(--mono);letter-spacing:.16em;
+  color:var(--muted);text-transform:uppercase;white-space:nowrap}
+td.k{color:var(--dim)} td.mono{font-family:var(--mono);font-size:.87rem}
+.yes{color:var(--green);font-weight:700} .no{color:#5f6c78}
+
+/* 写真 */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:54px}
+.duo figure{margin:0;border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  background:var(--surface)}
+.duo figcaption{padding:15px 20px;color:var(--muted);font:700 .74rem var(--mono);
+  letter-spacing:.14em;border-top:1px solid var(--line)}
+
+/* 但し書き */
+.caveat{border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:0 16px 16px 0;
+  background:rgba(255,191,71,.05);padding:26px 30px;margin-top:50px}
+.caveat b{display:block;margin-bottom:10px;font-size:1.02rem}
+.caveat p{margin:0;color:var(--dim);font-size:.94rem}
+
+/* 締め */
+.closebox{border:1px solid var(--line);border-radius:22px;padding:clamp(34px,5vw,60px);
+  background:linear-gradient(160deg,var(--surface2),var(--bg))}
+.price{font:800 clamp(2rem,5.5vw,3.2rem)/1 var(--mono);letter-spacing:-.05em;color:var(--green);margin:14px 0 0}
+.btn{display:inline-block;margin-top:28px;margin-right:12px;padding:15px 30px;border-radius:999px;
+  background:var(--green);color:#04150e;font-weight:800;text-decoration:none;font-size:.95rem;
+  transition:transform .22s ease,box-shadow .22s ease}
+.btn:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(55,230,160,.24)}
+.btn.ghost{background:transparent;color:var(--green);border:1px solid rgba(55,230,160,.4)}
+footer{padding:0 0 90px;color:#5f6c78;font:700 .68rem var(--mono);letter-spacing:.16em}
+
+.rev{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.16,1,.3,1),
+  transform .7s cubic-bezier(.16,1,.3,1)}
+.rev.in{opacity:1;transform:none}
+
+@media(max-width:880px){
+  .split,.duo{grid-template-columns:1fr}
+  .grid3,.legend{grid-template-columns:1fr}
+  .legend{border-radius:0 0 20px 20px}
+  .step{grid-template-columns:3.2rem 1fr;row-gap:22px}
+  .step .oled{grid-column:1/-1}
+}
+@media(prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important;scroll-behavior:auto!important}
+  .rev{opacity:1;transform:none}.btn:hover{transform:none}
+}
+
+
+.hero{position:relative;min-height:88vh;display:flex;align-items:flex-end;overflow:hidden}
+.hero-img{position:absolute;inset:0;background-size:cover;background-position:center;filter:saturate(.8) contrast(1.05)}
+.hero-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,9,12,.35) 0%,rgba(6,9,12,.82) 62%,var(--bg) 100%)}
+.hero-inner{position:relative;padding-bottom:clamp(60px,10vh,120px)}
+h1{font-size:clamp(2.6rem,8vw,5.6rem);line-height:1.04;letter-spacing:-.05em;margin:.4rem 0 0;font-weight:800}
+.tag{display:inline-block;margin-top:28px;padding:7px 15px;border:1px solid var(--amber);
+  color:var(--amber);border-radius:999px;font:700 .72rem var(--mono);letter-spacing:.14em}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:38px}
+.cell{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 24px}
+.cell .k{font:700 1.02rem var(--sans);color:var(--text)}
+.cell .sub{color:var(--muted);font-size:.9rem;margin-top:6px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px;margin-top:38px;align-items:start}
+.caveat{color:var(--muted);font-size:.84rem;margin-top:10px}
+.fig{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.branch{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:34px}
+.br{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line2);
+  border-radius:10px;padding:18px 20px}
+.br.ok{border-left-color:var(--green)} .br.no{border-left-color:var(--red)}
+.br .k{font:700 .95rem var(--sans)} .br .sub{color:var(--muted);font-size:.87rem;margin-top:5px}
+.steps{display:grid;gap:12px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.step .k{font:700 .9rem var(--mono);color:var(--cyan)} .step .sub{color:var(--muted);font-size:.87rem;margin-top:5px}
+.ov{width:100%;border-collapse:collapse;margin-top:34px;font-size:.93rem}
+.ov td{border-bottom:1px solid var(--line);padding:13px 4px;vertical-align:top}
+.ov td:first-child{color:var(--muted);font:700 .78rem var(--mono);letter-spacing:.1em;
+  text-transform:uppercase;width:150px;white-space:nowrap}
+footer{padding:70px 0 100px;border-top:1px solid var(--line)}
+@media(max-width:640px){.wrap{padding:0 20px}}
+
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-img" style="background-image:url(images/iso.jpg)"></div>
+  <div class="hero-veil"></div>
+  <div class="wrap hero-inner">
+    <div class="label">CINEWHOOP TOKYO / NAKED GOPRO REMOTE</div>
+    <h1>録れているか、<br>見えない。</h1>
+    <p class="say">剥きプロには画面がない。<b>録画が始まったのか、SDが入っているのか、動画モードなのか</b>——
+      飛ばす前に確かめる方法が、手元にない。</p>
+    <div class="tag">設計中 / 未製作・未検証</div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap rev">
+    <div class="label">THE PROBLEM</div>
+    <h2>帰ってきて、初めて気づく。</h2>
+    <p class="say">画面も背面液晶も外した GoPro は、LED の点滅しか手がかりがない。
+      それも機体に載せてしまえば見えない。<b>一本まるごと録れていなかった、という事故は、飛ばし終わってから分かる。</b></p>
+    <div class="grid3">
+      <div class="cell"><div class="k">SD が入っていない</div><div class="sub">カードを抜いたまま積んだ</div></div>
+      <div class="cell"><div class="k">写真モードのまま</div><div class="sub">シャッターは切れる。動画ではない</div></div>
+      <div class="cell"><div class="k">容量が尽きた</div><div class="sub">あと何秒録れるか分からない</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<section>
+  <div class="wrap">
+    <div class="label">THE ANSWER</div>
+    <h2>手元に、状態を出す。</h2>
+    <p class="say">BLE でカメラに繋ぎ、<b>剥きプロでは見えない情報だけ</b>を 0.96 インチの有機ELに出す。
+      録画の開始・停止は独立したタクトスイッチ。手袋のまま、画面を見ずに押せる。</p>
+
+    <div class="row">
+      <div>
+        <div class="oled">CAM1/3          REC 1:23
+────────────────────────
+GoPro 1234
+SD   28.4G
+LEFT 1:42:00
+MODE VIDEO      5.3K60
+REMOTE 92%</div>
+        <div class="caveat">録画中。SD 残量・あと何秒録れるか・解像度まで出る</div>
+      </div>
+      <div>
+        <div class="oled">CAM2/3           READY
+────────────────────────
+GoPro 5678
+SD   11.5G
+LEFT 41:20
+MODE PHOTO      !NOT VID
+REMOTE 88%      !HOT</div>
+        <div class="caveat">写真モードのまま。過熱も同時に警告する</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:22px">
+      <div>
+        <div class="oled">CAM3/3           READY
+────────────────────────
+GoPro 9012       !PAIR
+SD   NO CARD
+LEFT 0:00
+MODE --         !NOT VID
+REMOTE 88%</div>
+        <div class="caveat">SD が無い。ペアリングが済んでいない</div>
+      </div>
+      <div>
+        <div class="oled">CAMERAS            ALL
+────────────────────────
+*1 GoPro 1234      REC
+*2 GoPro 5678      rdy
+*3 GoPro 9012     pair
+*4 --</div>
+        <div class="caveat">最大4台。1台ずつでも、全台まとめてでも</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<section>
+  <div class="wrap rev">
+    <div class="label">MULTI CAMERA</div>
+    <h2>複数台を、ひとつで。</h2>
+    <p class="say">剥きプロを何台も運用していると、どれが録れているか分からなくなる。
+      <b>最大4台に同時接続し、一覧で状態を見て、選んで、あるいは全台まとめて回す。</b></p>
+    <div class="branch">
+      <div class="br ok"><div class="k">左右</div><div class="sub">カメラを選ぶ（ALL → 1 → 2 …）</div></div>
+      <div class="br ok"><div class="k">上下</div><div class="sub">画面を切り替える</div></div>
+      <div class="br ok"><div class="k">SW1</div><div class="sub">REC 開始 / 停止。これだけ独立させてある</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<section>
+  <div class="wrap">
+    <div class="label">PAIRING</div>
+    <h2>QR は、画面から出す。</h2>
+    <p class="say">画面のない剥きプロをペアリングするには、GoPro Labs の QR をレンズに見せる。
+      <b>そのQRを、このリモコン自身が表示する。</b>紙も スマホも要らない。</p>
+    <div class="row">
+      <div>
+        <img class="fig" src="images/oled_screens.png" alt="OLED の表示例">
+        <div class="caveat">実際の描画コードで出力した実ピクセル。QR は規格どおり静穏帯つき</div>
+      </div>
+      <div>
+        <div class="steps">
+          <div class="step"><div class="k">!PA</div><div class="sub">Quik アプリとペアリング</div></div>
+          <div class="step"><div class="k">!PR</div><div class="sub">リモコンとペアリング</div></div>
+          <div class="step"><div class="k">常用設定</div><div class="sub">ビープ・GPS・LED・前面表示・USB給電の信頼・起動ポップアップ解除をまとめて</div></div>
+        </div>
+        <p class="say">基板の裏にも同じ QR をシルクで刷ってある。<b>リモコンの電池が切れていても、ペアリングだけはできる。</b></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<section>
+  <div class="wrap rev">
+    <div class="label">HARDWARE</div>
+    <h2>30 × 62mm。</h2>
+    <div class="row">
+      <div><img class="fig" src="images/top.jpg" alt="おもて面"></div>
+      <div><img class="fig" src="images/bottom.jpg" alt="うら面"></div>
+    </div>
+    <table class="ov">
+      <tr><td>MCU</td><td>Seeed XIAO nRF52840（技適 211-220207 / 内蔵アンテナ）</td></tr>
+      <tr><td>表示</td><td>0.96" 128×64 有機EL（SSD1306 / I2C）</td></tr>
+      <tr><td>操作</td><td>タクトSW ×1（REC 専用）＋ 5方向スイッチ ×1</td></tr>
+      <tr><td>表示灯</td><td>赤 LED（タリー）＋ モジュール内蔵 RGB</td></tr>
+      <tr><td>電源</td><td>LIR2032（充電式コイン電池）。USB-C で充電</td></tr>
+      <tr><td>基板</td><td>30.1 × 62.1mm / 2層 / 1oz / 黒レジスト・白シルク・ENIG</td></tr>
+      <tr><td>対応</td><td>GoPro HERO9 以降（Open GoPro BLE API）</td></tr>
+      <tr><td>同時接続</td><td>最大 4台</td></tr>
+    </table>
+  </div>
+</section>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<section>
+  <div class="wrap">
+    <div class="label">STATUS</div>
+    <h2>まだ、作っていない。</h2>
+    <p class="say"><b>これは設計データであって、製品ではない。</b>基板は起こしたが発注しておらず、
+      ファームウェアはコンパイルが通るだけで実機で動かしていない。以下は未確認のまま。</p>
+    <div class="branch">
+      <div class="br no"><div class="k">実機動作</div><div class="sub">BLE 接続・コマンド・ステータス購読とも未検証</div></div>
+      <div class="br no"><div class="k">有機ELの穴位置</div><div class="sub">22×22mm ピッチは実物で未確認</div></div>
+      <div class="br no"><div class="k">画面QRの可読性</div><div class="sub">1モジュール 0.34mm。近づける必要がある</div></div>
+    </div>
+    <p class="say">設計ファイルと経緯は手元にある。<b>作って動かしたら、ここを書き換える。</b></p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="label">CINEWHOOP TOKYO</div>
+    <p class="say" style="margin-top:12px">Naked GoPro BLE Remote — 設計中</p>
+  </div>
+</footer>
+
+</body>
+</html>
