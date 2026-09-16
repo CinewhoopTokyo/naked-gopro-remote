@@ -86,8 +86,9 @@ h1,h2,h3,.pull,.cell b,.legend b{text-wrap:balance}
 
 /* ヒーロー */
 .hero{position:relative;min-height:100svh;display:grid;align-items:end;overflow:hidden}
-.hero-img{position:absolute;inset:0;background:url(images/product_case.jpg) 50% 42%/cover no-repeat;
-  transform:scale(1.06)}
+/* ヒーロー画像は HTML 側の style で差す（流用元 SmokeStopper の画像参照を削除）*/
+.hero-img{position:absolute;inset:0;background-size:cover;background-position:50% 42%;
+  background-repeat:no-repeat;transform:scale(1.06)}
 .hero-veil{position:absolute;inset:0;background:
   linear-gradient(to bottom,rgba(6,9,12,.62) 0%,rgba(6,9,12,.18) 34%,rgba(6,9,12,.92) 78%,var(--bg) 100%)}
 .hero-inner{position:relative;padding:0 0 clamp(56px,10vh,104px)}
