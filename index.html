@@ -236,6 +236,8 @@ REMOTE 88%</div>
       <div class="br ok"><div class="k">左右</div><div class="sub">カメラを選ぶ（ALL → 1 → 2 …）</div></div>
       <div class="br ok"><div class="k">上下</div><div class="sub">画面を切り替える</div></div>
       <div class="br ok"><div class="k">REC ボタン</div><div class="sub">録画の開始 / 停止。<b>これだけ独立した押しボタン</b>にしてある。手袋のまま、画面を見ずに押せる</div></div>
+      <div class="br ok"><div class="k">中央を長押し</div><div class="sub">電源オフ。押している間、画面に進み具合が出る。
+        <b>復帰は REC</b>。カバンの中で当たっただけでは起きない</div></div>
     </div>
   </div>
 </section>
@@ -276,15 +278,20 @@ REMOTE 88%</div>
       <div><img class="fig" src="images/bottom.jpg" alt="うら面"></div>
     </div>
     <div class="branch" style="margin-top:34px">
-      <div class="br ok"><div class="k">電池は表裏どちらでも</div><div class="sub">同じ座標に表裏ランドがあり、実装するのは片方だけ。ケースの作りで選べる</div></div>
-      <div class="br no"><div class="k">CR2032 は使えない</div><div class="sub">一次電池を入れて USB を挿すと充電しようとする。基板にも <b>LIR2032 ONLY - NO CR2032</b> と刷ってある</div></div>
+      <div class="br ok"><div class="k">1S LiPo 502025（250mAh）</div><div class="sub">有機ELの真下、スペーサの 6mm の隙間に寝かせて両面テープで留める。
+        JST PH 2.0 で抜き差しできる</div></div>
+      <div class="br ok"><div class="k">録画したまま 12時間</div><div class="sub">コイン電池（LIR2032・40mAh）だと 1.3時間で、現場1日を通せなかった。
+        <b>250mAh で 12.5時間</b>。★見積り・実機未測定</div></div>
+      <div class="br no"><div class="k">一次電池は使えない</div><div class="sub">USB を挿すと充電しようとする。基板にも <b>LIPO 1S 3.7V &#47; CHECK POLARITY</b> と刷ってある。
+        <b>PH の極性は統一されていない</b>ので、挿す前にテスタで確認すること</div></div>
     </div>
     <table class="ov">
       <tr><td>MCU</td><td>Seeed XIAO nRF52840（技適 211-220207 / 内蔵アンテナ）</td></tr>
       <tr><td>表示</td><td>0.96" 128×64 有機EL（SSD1306 / I2C）</td></tr>
       <tr><td>操作</td><td>REC 専用ボタン（APEM MJTP1250）＋ 5方向スイッチ（BRIGHT TSX101G100-250）</td></tr>
       <tr><td>表示灯</td><td>赤 LED（タリー）＋ モジュール内蔵 RGB（緑=待機 / 赤=録画 / 黄=警告 / 青=探索）</td></tr>
-      <tr><td>電源</td><td><b>LIR2032 のみ</b>（充電式リチウムイオン）。USB-C で充電。<b>CR2032 は不可</b></td></tr>
+      <tr><td>電源</td><td><b>1S LiPo 502025</b>（5.0 &times; 20 &times; 25mm・約250mAh）。JST PH 2.0。USB-C で充電。<b>一次電池は不可</b></td></tr>
+      <tr><td>電源操作</td><td>方向スイッチの中央を 2秒長押しで電源オフ。<b>REC で復帰。</b>30分無操作でも自動オフ（録画中を除く）</td></tr>
       <tr><td>基板</td><td>30.1 × 62.1mm / 2層 / 1oz / 黒レジスト・白シルク・ENIG</td></tr>
       <tr><td>対応</td><td>GoPro HERO9 以降（Open GoPro BLE API）</td></tr>
       <tr><td>同時接続</td><td>最大 8台（一覧は 2列 × 4行）</td></tr>
@@ -302,7 +309,7 @@ REMOTE 88%</div>
       ファームウェアはコンパイルが通るだけで実機で動かしていない。以下は未確認のまま。</p>
     <div class="branch">
       <div class="br no"><div class="k">実機動作</div><div class="sub">BLE 接続・コマンド・ステータス購読とも未検証</div></div>
-      <div class="br no"><div class="k">有機ELの穴位置</div><div class="sub">22×22mm ピッチは実物で未確認</div></div>
+      <div class="br no"><div class="k">消費電流</div><div class="sub">動作時間はすべて見積り。有機ELの 10mA が支配しており、実機で測るまで確定しない</div></div>
       <div class="br no"><div class="k">画面QRの可読性</div><div class="sub">1モジュール 0.34mm。近づける必要がある</div></div>
     </div>
     <p class="say">設計ファイルと経緯は手元にある。<b>作って動かしたら、ここを書き換える。</b></p>
